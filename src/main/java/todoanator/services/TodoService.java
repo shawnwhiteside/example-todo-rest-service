@@ -30,8 +30,8 @@ public class TodoService {
 		return StatusCodes.SUCCESS;
 	}
 	
-	public String update(Todo todo) {
-		Optional<Todo> existingTodo = findMatchingTodoById(inMemoryStore.getTodoList(), todo.getId());
+	public String update(String id, Todo todo) {
+		Optional<Todo> existingTodo = findMatchingTodoById(inMemoryStore.getTodoList(), id);
 		String status = StatusCodes.FAILURE;
 		if(existingTodo.isPresent()) {
 			if(todo.getTitle() == null || todo.getTitle().isEmpty()) {

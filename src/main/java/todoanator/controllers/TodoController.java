@@ -4,12 +4,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import todoanator.models.Todo;
 import todoanator.services.TodoService;
+import todoanator.util.StatusCodes;
 
+
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,7 +77,10 @@ public class TodoController {
 		Todo newTodo = new Todo(todo.getTitle(), todo.getDescription(), todo.getDueDate());
 		service.add(newTodo);
 		//TODO: add error handling for HTTP response
-		return new ResponseEntity<Todo>(newTodo, HttpStatus.CREATED);
+		URI location = URI.create("/todo/"+newTodo.getId());
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setLocation(location);
+		return new ResponseEntity<Todo>(newTodo, responseHeaders, HttpStatus.CREATED);
 	}
 	
 	/*
@@ -96,9 +103,10 @@ public class TodoController {
 				.map(t -> new Todo(t.getTitle(), t.getDescription(), t.getDueDate()))
 				.collect(Collectors.toList());
 		
-		//TODO: add error handling for HTTP response
-		service.bulkAdd(newTodos);
-
+		String status = service.bulkAdd(newTodos);
+		if (!status.equals(StatusCodes.SUCCESS)) {
+			return new ResponseEntity<String>("", HttpStatus.BAD_REQUEST);
+		}
 		return new ResponseEntity<List<Todo>>(newTodos, HttpStatus.CREATED);
 	}
 	
@@ -107,13 +115,18 @@ public class TodoController {
 		
 		//TODO: input parameter validation & sanitizing
 		Todo newTodo = new Todo(todo.getTitle(), todo.getDescription(), todo.getDueDate());
-		service.update(newTodo);
-		//TODO: add error handling
-		return new ResponseEntity<Todo>(newTodo, HttpStatus.CREATED);
+		String status = service.update(id, newTodo);
+
+		if (status.equals(StatusCodes.NOT_FOUND)) {
+			return new ResponseEntity<String>("", HttpStatus.NOT_FOUND);
+		}
+		else if (status.equals(StatusCodes.FAILURE)) {
+			return new ResponseEntity<String>("", HttpStatus.BAD_REQUEST);
+		}
+		
+		URI location = URI.create("/todo/"+newTodo.getId());
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setLocation(location);
+		return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
 	}
-	
-
-
-	
-
 }
